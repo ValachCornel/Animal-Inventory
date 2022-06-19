@@ -75,6 +75,9 @@
                     <DataTemplate>
                         <StackPanel Orientation="Horizontal">
                             <Image Height="50" Margin="3" Source="{Binding ImagePath}"/>
+                            <TextBlock Margin="3" HorizontalAlignment="Center" Text="{Binding Name}"/>
+                            <TextBlock Margin="3" HorizontalAlignment="Center" Text="{Binding Date}"/>
+                            <TextBlock Margin="3" HorizontalAlignment="Center" Text="{Binding Type}"/>
                         </StackPanel>
                     </DataTemplate>
                 </ListBox.ItemTemplate>

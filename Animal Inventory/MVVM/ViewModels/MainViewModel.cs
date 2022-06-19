@@ -10,10 +10,11 @@ using System.Xml;
 using System.Linq;
 using NUnit.Framework;
 using System.Windows;
+using System.IO;
 
 namespace Animal_Inventory.MVVM.ViewModels
 {
-    class Animal
+    public class Animal
     {
         public string Name { get; set; }
         public string Type { get; set; }
@@ -27,7 +28,7 @@ namespace Animal_Inventory.MVVM.ViewModels
         {
             
             AnimalType = new ObservableCollection<string>();
-            Inventory = new ObservableCollection<string>();
+            _inventory = new ObservableCollection<Animal>();
             AnimalType.Add("Animal Mare");
             AnimalType.Add("Animal Mic");
             SelectedDate = DateTime.Now;
@@ -87,8 +88,8 @@ namespace Animal_Inventory.MVVM.ViewModels
             }
         }
 
-        private ObservableCollection<string> _inventory;
-        public ObservableCollection<string> Inventory
+        private ObservableCollection<Animal> _inventory;
+        public ObservableCollection<Animal> Inventory
         {
             get { return _inventory; }
             set
@@ -98,8 +99,8 @@ namespace Animal_Inventory.MVVM.ViewModels
             }
         }
 
-        private string _selectedAnimal;
-        public string SelectedAnimal
+        private Animal _selectedAnimal;
+        public Animal SelectedAnimal
         {
             get { return _selectedAnimal; }
             set
@@ -183,16 +184,16 @@ namespace Animal_Inventory.MVVM.ViewModels
             VisibilityTab = "Hidden";
             if (isEdit)
             {
-                Inventory.Insert(AnimalIndex, Name + "-" + SelectedType + "-" + SelectedDate.ToShortDateString() + "-" + ImagePath);
+               // Inventory.Insert(AnimalIndex, Name + "-" + SelectedType + "-" + SelectedDate.ToShortDateString() + "-" + ImagePath);
                 isEdit = false;
             }
             else
             {
                 animals.Add(new Animal { Name = Name, Type = SelectedType, Date = SelectedDate, ImagePath = ImagePath });
-                foreach (var item in animals)
-                {
-                    Inventory.Add(item.Name + "-" + item.Type + "-" + item.Date.ToShortDateString() + "-" + item.ImagePath);
-                }
+                //foreach (var item in animals)
+                //{
+                //    Inventory.Add(item.Name + "-" + item.Type + "-" + item.Date.ToShortDateString() + "-" + item.ImagePath);
+                //}
                 SaveToXml(Name, SelectedType, SelectedDate, ImagePath);
             }
             animals.Clear();
@@ -204,14 +205,14 @@ namespace Animal_Inventory.MVVM.ViewModels
             VisibilityTab = "Visible";
 
 
-            string[] content = SelectedAnimal.Split('-');
+            string[] content = new string[4];//SelectedAnimal.Split('-');
             int index = Inventory.IndexOf(SelectedAnimal);
             Inventory.RemoveAt(index);
             AnimalIndex = AnimalIndex + 1;
 
 
             Name = content[0];
-            SelectedAnimal = content[1];
+            SelectedAnimal = null;// content[1];
             SelectedDate = Convert.ToDateTime(content[2]);
             ImagePath = content[3];
 
@@ -229,12 +230,14 @@ namespace Animal_Inventory.MVVM.ViewModels
                 ImagePath = op.FileName; 
             }
         }
-        string filepath = @"C:\Users\Corne\source\repos\Animal Inventory\Animal Inventory\Save.xml";
+        //setam calea sa fie in folderul de Debug
+        //string filepath = @"C:\Users\Corne\source\repos\Animal Inventory\Animal Inventory\Save.xml";
+        string filepath = System.IO.Directory.GetCurrentDirectory() + "\\Save.xml";
         protected virtual void OnDelete(object obj)
         {
             if (SelectedAnimal != null)
             {
-                string[] content = SelectedAnimal.Split('-');
+                string[] content = null; //SelectedAnimal.Split('-');
                 int index = Inventory.IndexOf(SelectedAnimal);
                 Inventory.RemoveAt(index);
 
@@ -248,8 +251,13 @@ namespace Animal_Inventory.MVVM.ViewModels
         
         private void SaveToXml(string name, string type, DateTime date, string path)
         {
-            
-            XDocument doc = XDocument.Load(filepath);
+            XDocument doc = null;
+
+            if (File.Exists(filepath))
+                doc = XDocument.Load(filepath);
+            else
+                doc = new XDocument(new XElement("ANIMALS"));
+
             XElement root = new XElement("ANIMAL");
             root.Add(new XAttribute("name", name));
             root.Add(new XAttribute("type", type));
@@ -263,8 +271,13 @@ namespace Animal_Inventory.MVVM.ViewModels
         {
             var animal = new Animal();            
             List<Animal> lines = new List<Animal>();
+            XDocument doc = null;
 
-            XDocument doc = XDocument.Load(filepath);
+            if (File.Exists(filepath))
+             doc = XDocument.Load(filepath);
+
+            if (doc == null) return;
+
             XAttribute attribute = null;
 
             foreach (var item in doc.Root.Elements())
@@ -285,16 +298,11 @@ namespace Animal_Inventory.MVVM.ViewModels
                 if (attribute != null)
                     animal.Type = attribute.Value;
 
-                lines.Add(animal);
+                _inventory.Add(animal);
 
-                foreach (Animal text in lines)
-                {
-                    ImagePath = text.ImagePath;
-                    Inventory.Add(text.Name + "-" + text.Type + "-" + text.Date.ToShortDateString() + "-" + text.ImagePath);
-                }
-
-                lines.Clear();
             }
+
+            OnPropertyChanged(nameof(Inventory));
                                  
         }
 
