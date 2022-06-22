@@ -154,7 +154,10 @@ namespace Animal_Inventory.MVVM.ViewModels
             }
         }
 
+        public bool isAdd = false;
         public bool isEdit = false;
+        string filepath = Directory.GetCurrentDirectory() + "\\Save.xml";
+        string folderPath = Directory.GetCurrentDirectory() + "\\Photos\\";
 
         #endregion
 
@@ -175,55 +178,78 @@ namespace Animal_Inventory.MVVM.ViewModels
 
         protected virtual void OnAdd(object obj)
         {
+            isAdd = true;
+            Name = "";
+            ImagePath = "";
+            SelectedType = "";
+            SelectedDate = DateTime.Now;
             VisibilityMain = "Hidden";
             VisibilityTab = "Visible";
         }
         protected virtual void OnSave(object obj)
         {
-            VisibilityMain = "Visible";
-            VisibilityTab = "Hidden";
-            if (isEdit)
-            {                            
-                Inventory.Insert(AnimalIndex, new Animal { Name = Name, Type = SelectedType, Date = SelectedDate, ImagePath = Path.Combine(folderPath, ImagePath) });
-                SaveOnEdit(selectedName);
-                isEdit = false;             
-            }
-            else
+            if (isAdd)
             {
-                animals.Add(new Animal { Name = Name, Type = SelectedType, Date = SelectedDate, ImagePath = Path.Combine(folderPath, ImagePath)});
-                foreach (var item in animals)
+                VisibilityMain = "Visible";
+                VisibilityTab = "Hidden";
+                if (Name == "" || SelectedType == "" || SelectedDate == null || ImagePath == null)
                 {
-                    Inventory.Add(new Animal { Name = item.Name, Type = item.Type, Date = item.Date, ImagePath = Path.GetFileName(item.ImagePath)});
+                    MessageBox.Show("Please fill all the fields!");
                 }
-                SaveToXml(Name, SelectedType, SelectedDate, ImagePath);
+                else
+                {
+                    if (isEdit)
+                    {
+                        Inventory.Insert(AnimalIndex, new Animal { Name = Name, Type = SelectedType, Date = SelectedDate.Date, ImagePath = Path.Combine(folderPath, ImagePath) });
+                        SaveOnEdit(selectedName);
+                        isEdit = false;
+                    }
+                    else
+                    {
+                        animals.Add(new Animal { Name = Name, Type = SelectedType, Date = SelectedDate.Date, ImagePath = Path.Combine(folderPath, ImagePath) });
+                        foreach (var item in animals)
+                        {
+                            Inventory.Add(new Animal { Name = item.Name, Type = item.Type, Date = item.Date.Date, ImagePath = Path.GetFileName(item.ImagePath) });
+                        }
+                        SaveToXml(Name, SelectedType, SelectedDate, ImagePath);
+                    }
+
+                    Inventory.Clear();
+                    LoadToList();
+                    animals.Clear();
+
+                }
+                isAdd = false;
             }
+                      
             
-            Inventory.Clear();
-            LoadToList();
-            animals.Clear();
         }
         string selectedName, path;
         protected virtual void OnEdit(object obj)
         {
-            VisibilityMain = "Hidden";
-            VisibilityTab = "Visible";
+            if(SelectedAnimal != null)
+            {
+                VisibilityMain = "Hidden";
+                VisibilityTab = "Visible";
 
-            selectedName = SelectedAnimal.Name;
-            path = SelectedAnimal.ImagePath;
-            string type = SelectedAnimal.Type;
-            string date = SelectedAnimal.Date.ToString();           
+                selectedName = SelectedAnimal.Name;
+                path = SelectedAnimal.ImagePath;
+                string type = SelectedAnimal.Type;
+                string date = SelectedAnimal.Date.ToString();
 
-            int index = Inventory.IndexOf(SelectedAnimal);
-            Inventory.RemoveAt(index);
-            AnimalIndex = AnimalIndex + 1;
+                int index = Inventory.IndexOf(SelectedAnimal);
+                Inventory.RemoveAt(index);
+                AnimalIndex = AnimalIndex + 1;
 
-            Name = selectedName;
-            SelectedType = type;
-            SelectedDate = Convert.ToDateTime(date);
-            ImagePath = path;
+                Name = selectedName;
+                SelectedType = type;
+                SelectedDate = Convert.ToDateTime(date);
+                ImagePath = path;
 
-            
-            isEdit = true;
+                isEdit = true;
+            }
+            else
+                MessageBox.Show("Please select a animal!");     
         }
         protected virtual void OnSelect(object obj)
         {
@@ -234,16 +260,19 @@ namespace Animal_Inventory.MVVM.ViewModels
               "Portable Network Graphic (*.png)|*.png";
             if (op.ShowDialog() == true)
             {
-                ImagePath = op.SafeFileName;
                 if (!Directory.Exists(folderPath))
                     Directory.CreateDirectory(folderPath);
 
-                File.Copy(op.FileName, Path.Combine(folderPath, Path.GetFileName(ImagePath)), true);
+                if (!File.Exists(Path.Combine(folderPath, op.SafeFileName)))
+                {
+                    ImagePath = op.SafeFileName;
+                    File.Copy(op.FileName, Path.Combine(folderPath, Path.GetFileName(ImagePath)), true);
+                }
+                else
+                    ImagePath = op.SafeFileName;
+                                             
             }
-        }
-
-        string filepath = Directory.GetCurrentDirectory() + "\\Save.xml";
-        string folderPath = Directory.GetCurrentDirectory() + "\\Photos\\";
+        }       
         protected virtual void OnDelete(object obj)
         {
             if (SelectedAnimal != null)
@@ -254,7 +283,10 @@ namespace Animal_Inventory.MVVM.ViewModels
                 int index = Inventory.IndexOf(SelectedAnimal);
                 Inventory.RemoveAt(index);                
                 doc.Save(filepath);
-            }           
+            }
+            else
+                MessageBox.Show("Please select a animal!");
+                       
         }
         
         private void SaveToXml(string name, string type, DateTime date, string path)
@@ -312,7 +344,7 @@ namespace Animal_Inventory.MVVM.ViewModels
 
                 attribute = item.Attribute("date");
                 if (attribute != null)
-                    animal.Date = DateTime.Parse(attribute.Value);
+                    animal.Date = DateTime.Parse(attribute.Value).Date;
 
                 attribute = item.Attribute("type");
                 if (attribute != null)
@@ -321,10 +353,7 @@ namespace Animal_Inventory.MVVM.ViewModels
                 
                 Inventory.Add(animal);
 
-            }
-
-            //OnPropertyChanged(nameof(Inventory));
-                                 
+            }                               
         }
 
         #region INotifyPropertyChanged
