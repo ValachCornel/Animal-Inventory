@@ -179,9 +179,7 @@ namespace Animal_Inventory.MVVM.ViewModels
             VisibilityTab = "Visible";
         }
         protected virtual void OnSave(object obj)
-        {       
-            XmlDocument xml = new XmlDocument();
-            xml.Load(filepath);
+        {
             VisibilityMain = "Visible";
             VisibilityTab = "Hidden";
             if (isEdit)
@@ -236,7 +234,10 @@ namespace Animal_Inventory.MVVM.ViewModels
               "Portable Network Graphic (*.png)|*.png";
             if (op.ShowDialog() == true)
             {
-                ImagePath = op.SafeFileName;              
+                ImagePath = op.SafeFileName;
+                if (!Directory.Exists(folderPath))
+                    Directory.CreateDirectory(folderPath);
+
                 File.Copy(op.FileName, Path.Combine(folderPath, Path.GetFileName(ImagePath)), true);
             }
         }
