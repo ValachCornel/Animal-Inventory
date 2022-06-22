@@ -179,43 +179,52 @@ namespace Animal_Inventory.MVVM.ViewModels
             VisibilityTab = "Visible";
         }
         protected virtual void OnSave(object obj)
-        {
+        {       
+            XmlDocument xml = new XmlDocument();
+            xml.Load(filepath);
             VisibilityMain = "Visible";
             VisibilityTab = "Hidden";
             if (isEdit)
-            {
-               // Inventory.Insert(AnimalIndex, Name + "-" + SelectedType + "-" + SelectedDate.ToShortDateString() + "-" + ImagePath);
-                isEdit = false;
+            {                            
+                Inventory.Insert(AnimalIndex, new Animal { Name = Name, Type = SelectedType, Date = SelectedDate, ImagePath = Path.Combine(folderPath, ImagePath) });
+                SaveOnEdit(selectedName);
+                isEdit = false;             
             }
             else
             {
-                animals.Add(new Animal { Name = Name, Type = SelectedType, Date = SelectedDate, ImagePath = ImagePath });
-                //foreach (var item in animals)
-                //{
-                //    Inventory.Add(item.Name + "-" + item.Type + "-" + item.Date.ToShortDateString() + "-" + item.ImagePath);
-                //}
+                animals.Add(new Animal { Name = Name, Type = SelectedType, Date = SelectedDate, ImagePath = Path.Combine(folderPath, ImagePath)});
+                foreach (var item in animals)
+                {
+                    Inventory.Add(new Animal { Name = item.Name, Type = item.Type, Date = item.Date, ImagePath = Path.GetFileName(item.ImagePath)});
+                }
                 SaveToXml(Name, SelectedType, SelectedDate, ImagePath);
             }
+            
+            Inventory.Clear();
+            LoadToList();
             animals.Clear();
         }
-        
+        string selectedName, path;
         protected virtual void OnEdit(object obj)
         {
             VisibilityMain = "Hidden";
             VisibilityTab = "Visible";
 
+            selectedName = SelectedAnimal.Name;
+            path = SelectedAnimal.ImagePath;
+            string type = SelectedAnimal.Type;
+            string date = SelectedAnimal.Date.ToString();           
 
-            string[] content = new string[4];//SelectedAnimal.Split('-');
             int index = Inventory.IndexOf(SelectedAnimal);
             Inventory.RemoveAt(index);
             AnimalIndex = AnimalIndex + 1;
 
+            Name = selectedName;
+            SelectedType = type;
+            SelectedDate = Convert.ToDateTime(date);
+            ImagePath = path;
 
-            Name = content[0];
-            SelectedAnimal = null;// content[1];
-            SelectedDate = Convert.ToDateTime(content[2]);
-            ImagePath = content[3];
-
+            
             isEdit = true;
         }
         protected virtual void OnSelect(object obj)
@@ -227,24 +236,22 @@ namespace Animal_Inventory.MVVM.ViewModels
               "Portable Network Graphic (*.png)|*.png";
             if (op.ShowDialog() == true)
             {
-                ImagePath = op.FileName; 
+                ImagePath = op.SafeFileName;              
+                File.Copy(op.FileName, Path.Combine(folderPath, Path.GetFileName(ImagePath)), true);
             }
         }
-        //setam calea sa fie in folderul de Debug
-        //string filepath = @"C:\Users\Corne\source\repos\Animal Inventory\Animal Inventory\Save.xml";
-        string filepath = System.IO.Directory.GetCurrentDirectory() + "\\Save.xml";
+
+        string filepath = Directory.GetCurrentDirectory() + "\\Save.xml";
+        string folderPath = Directory.GetCurrentDirectory() + "\\Photos\\";
         protected virtual void OnDelete(object obj)
         {
             if (SelectedAnimal != null)
-            {
-                string[] content = null; //SelectedAnimal.Split('-');
-                int index = Inventory.IndexOf(SelectedAnimal);
-                Inventory.RemoveAt(index);
-
+            {         
                 var doc = XDocument.Load(filepath);
-                var target = doc.Root.Descendants("ANIMAL").FirstOrDefault(x => x.Attribute("name").Value == content[0]);
+                var target = doc.Root.Descendants("ANIMAL").FirstOrDefault(x => x.Attribute("name").Value == SelectedAnimal.Name.ToString());
                 target.Remove();
-                
+                int index = Inventory.IndexOf(SelectedAnimal);
+                Inventory.RemoveAt(index);                
                 doc.Save(filepath);
             }           
         }
@@ -267,9 +274,19 @@ namespace Animal_Inventory.MVVM.ViewModels
             doc.Save(filepath);
         }
 
-        private void LoadToList()
+        private void SaveOnEdit(string name)
         {
-            var animal = new Animal();            
+            var doc = XDocument.Load(filepath);
+            var target = doc.Root.Descendants("ANIMAL").FirstOrDefault(x => x.Attribute("name").Value == name);
+            target.Attribute("path").Value = ImagePath;
+            target.Attribute("name").Value = Name;
+            target.Attribute("date").Value = SelectedDate.ToShortDateString();
+            target.Attribute("type").Value = SelectedType;
+            doc.Save(filepath);
+        }
+
+        private void LoadToList()
+        {                      
             List<Animal> lines = new List<Animal>();
             XDocument doc = null;
 
@@ -282,9 +299,11 @@ namespace Animal_Inventory.MVVM.ViewModels
 
             foreach (var item in doc.Root.Elements())
             {
+                var animal = new Animal();
+
                 attribute = item.Attribute("path");
                 if(attribute != null)
-                    animal.ImagePath = attribute.Value;
+                    animal.ImagePath = Path.Combine(folderPath, attribute.Value);
 
                 attribute = item.Attribute("name");
                 if (attribute != null)
@@ -298,11 +317,12 @@ namespace Animal_Inventory.MVVM.ViewModels
                 if (attribute != null)
                     animal.Type = attribute.Value;
 
-                _inventory.Add(animal);
+                
+                Inventory.Add(animal);
 
             }
 
-            OnPropertyChanged(nameof(Inventory));
+            //OnPropertyChanged(nameof(Inventory));
                                  
         }
 

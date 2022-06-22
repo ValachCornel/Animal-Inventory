@@ -9,6 +9,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Photos\**" />
+    <EmbeddedResource Remove="Photos\**" />
+    <None Remove="Photos\**" />
+    <Page Remove="Photos\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="NUnit" Version="3.13.3" />
     <PackageReference Include="Prism.Core" Version="8.1.97" />
   </ItemGroup>
