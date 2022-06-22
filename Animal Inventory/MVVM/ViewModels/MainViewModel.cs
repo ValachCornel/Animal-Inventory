@@ -6,9 +6,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Xml.Linq;
-using System.Xml;
 using System.Linq;
-using NUnit.Framework;
 using System.Windows;
 using System.IO;
 
@@ -17,9 +15,23 @@ namespace Animal_Inventory.MVVM.ViewModels
     public class Animal
     {
         public string Name { get; set; }
-        public string Type { get; set; }
+        public AnimalType Type { get; set; }
         public DateTime Date { get; set; }
         public string ImagePath { get; set; }
+    }
+
+    public enum AnimalType
+    {
+        [Description("Niciunu")]
+        [System.ComponentModel.DataAnnotations.Display(Order = 0)]
+        None = -1,
+        [Description("Animal mic")]
+        [System.ComponentModel.DataAnnotations.Display(Order = 1)]
+        AnimalMic = 0,
+        [Description("Animal mare")]
+        [System.ComponentModel.DataAnnotations.Display(Order = 2)]
+        AnimalMare = 1
+
     }
 
     class MainViewModel : INotifyPropertyChanged
@@ -121,8 +133,8 @@ namespace Animal_Inventory.MVVM.ViewModels
             }
         }
 
-        private string _selectedType;
-        public string SelectedType
+        private AnimalType _selectedType;
+        public AnimalType SelectedType
         {
             get { return _selectedType; }
             set
@@ -181,7 +193,7 @@ namespace Animal_Inventory.MVVM.ViewModels
             isAdd = true;
             Name = "";
             ImagePath = "";
-            SelectedType = "";
+            SelectedType = ViewModels.AnimalType.None;
             SelectedDate = DateTime.Now;
             VisibilityMain = "Hidden";
             VisibilityTab = "Visible";
@@ -192,7 +204,7 @@ namespace Animal_Inventory.MVVM.ViewModels
             {
                 VisibilityMain = "Visible";
                 VisibilityTab = "Hidden";
-                if (Name == "" || SelectedType == "" || SelectedDate == null || ImagePath == null)
+                if (Name == "" || SelectedType == ViewModels.AnimalType.None || SelectedDate == null || ImagePath == null)
                 {
                     MessageBox.Show("Please fill all the fields!");
                 }
@@ -211,7 +223,7 @@ namespace Animal_Inventory.MVVM.ViewModels
                         {
                             Inventory.Add(new Animal { Name = item.Name, Type = item.Type, Date = item.Date.Date, ImagePath = Path.GetFileName(item.ImagePath) });
                         }
-                        SaveToXml(Name, SelectedType, SelectedDate, ImagePath);
+                        SaveToXml(Name, SelectedType.ToString(), SelectedDate, ImagePath);
                     }
 
                     Inventory.Clear();
@@ -234,7 +246,7 @@ namespace Animal_Inventory.MVVM.ViewModels
 
                 selectedName = SelectedAnimal.Name;
                 path = SelectedAnimal.ImagePath;
-                string type = SelectedAnimal.Type;
+                AnimalType type = SelectedAnimal.Type;
                 string date = SelectedAnimal.Date.ToString();
 
                 int index = Inventory.IndexOf(SelectedAnimal);
@@ -314,7 +326,7 @@ namespace Animal_Inventory.MVVM.ViewModels
             target.Attribute("path").Value = ImagePath;
             target.Attribute("name").Value = Name;
             target.Attribute("date").Value = SelectedDate.ToShortDateString();
-            target.Attribute("type").Value = SelectedType;
+            target.Attribute("type").Value = SelectedType.ToString();
             doc.Save(filepath);
         }
 
@@ -348,9 +360,12 @@ namespace Animal_Inventory.MVVM.ViewModels
 
                 attribute = item.Attribute("type");
                 if (attribute != null)
-                    animal.Type = attribute.Value;
+                {
+                    Enum.TryParse(attribute.Value, out AnimalType animalType);
+                    animal.Type = animalType;
+                }
 
-                
+
                 Inventory.Add(animal);
 
             }                               

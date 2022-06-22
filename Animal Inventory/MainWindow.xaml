@@ -3,7 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:Animal_Inventory"
+        xmlns:converters="clr-namespace:Animal_Inventory.Converters"
+        xmlns:local="clr-namespace:Animal_Inventory.MVVM.ViewModels"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
         xmlns:vm="clr-namespace:Animal_Inventory.MVVM.ViewModels"
         mc:Ignorable="d"
         Title="MainWindow" 
@@ -14,9 +16,14 @@
         ResizeMode="NoResize"
         Background="#424040">
 
+    <Window.Resources>
+        <converters:EnumDescriptionConverter x:Key="EnumDescriptionConverter"/>
+    </Window.Resources>
+    
     <Window.DataContext>
         <vm:MainViewModel/>
     </Window.DataContext>
+    
     <Grid>
         
         <Grid.RowDefinitions>
@@ -133,8 +140,8 @@
 
 
             <ComboBox Width="220"
-                      ItemsSource="{Binding AnimalType}"
-                      SelectedItem="{Binding SelectedType}"
+                      ItemsSource="{Binding Source={StaticResource EnumDescriptionConverter}, Path=Strings}"
+                      SelectedItem="{Binding SelectedType, Converter={StaticResource EnumDescriptionConverter}}"
                       Margin="0,25,0,0"
                       Height="40"
                       BorderThickness="0"
